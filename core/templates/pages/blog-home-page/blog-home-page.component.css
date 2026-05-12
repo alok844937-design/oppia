@@ -134,13 +134,10 @@ oppia-blog-home-page .search-heading {
 
 ngb-pagination .page-link {
   border: unset;
-  border-radius: 100%;
   color: #333;
   font-size: 22px;
   font-weight: bold;
-  height: 3rem;
   padding: 0;
-  width: 3rem;
 }
 
 ngb-pagination .page-link:hover {
@@ -148,14 +145,10 @@ ngb-pagination .page-link:hover {
   border-color: unset;
 }
 
-ngb-pagination .page-item:last-child .page-link {
-  border-bottom-right-radius: 100%;
-  border-top-right-radius: 100%;
-}
-
-ngb-pagination .page-item:first-child .page-link {
-  border-bottom-left-radius: 100%;
-  border-top-left-radius: 100%;
+ngb-pagination .page-item:not(.disabled):not(:first-child):not(:last-child) .page-link {
+  border-radius: 100%;
+  height: 3rem;
+  width: 3rem;
 }
 
 ngb-pagination .page-item.active .page-link {
