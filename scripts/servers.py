@@ -471,7 +471,10 @@ def create_managed_web_browser(port: int) -> ContextManager[psutil.Process]:
 
 @contextlib.contextmanager
 def managed_ng_build(
-    *, use_prod_env: bool = False, watch_mode: bool = False
+    *,
+    use_prod_env: bool = False,
+    watch_mode: bool = False,
+    source_maps: bool = False,
 ) -> Iterator[psutil.Process]:
     """Returns context manager to start/stop the ng compiler gracefully.
 
@@ -479,6 +482,8 @@ def managed_ng_build(
         use_prod_env: bool. Whether to compile for use in production.
         watch_mode: bool. Run the compiler in watch mode, which rebuilds on file
             change.
+        source_maps: bool. Whether to generate source maps for the compiled
+            files. This is useful for debugging the compiled code.
 
     Yields:
         psutil.Process. The ng compiler process.
@@ -491,6 +496,9 @@ def managed_ng_build(
         compiler_args.append('--prod')
     if watch_mode:
         compiler_args.append('--watch')
+    if source_maps:
+        compiler_args.append('--source-map')
+
     with contextlib.ExitStack() as exit_stack:
         # OK to use shell=True here because we are passing string literals and
         # constants, so there is no risk of a shell-injection attack.
@@ -513,104 +521,6 @@ def managed_ng_build(
                 # Message printed when a compilation has succeeded. We break
                 # after the first one to ensure the site is ready to be visited.
                 if b'Build at: ' in line:
-                    break
-            else:
-                # If none of the lines contained the string 'Built at',
-                # raise an error because a build hasn't finished successfully.
-                raise IOError('First build never completed')
-
-        def print_proc_output() -> None:
-            """Prints the proc's output until it is exhausted."""
-            for line in iter(read_line_func, None):
-                common.write_stdout_safe(line)
-
-        # Start a thread to print the rest of the compiler's output to stdout.
-        printer_thread = threading.Thread(target=print_proc_output)
-        printer_thread.start()
-        exit_stack.callback(printer_thread.join)
-
-        yield proc
-
-
-@contextlib.contextmanager
-def managed_webpack_compiler(
-    config_path: Optional[str] = None,
-    use_prod_env: bool = False,
-    use_source_maps: bool = False,
-    watch_mode: bool = False,
-    max_old_space_size: Optional[int] = None,
-) -> Iterator[psutil.Process]:
-    """Returns context manager to start/stop the webpack compiler gracefully.
-
-    Args:
-        config_path: str|None. Path to an explicit webpack config, or None to
-            determine it from the other args.
-        use_prod_env: bool. Whether to compile for use in production. Only
-            respected if config_path is None.
-        use_source_maps: bool. Whether to compile with source maps. Only
-            respected if config_path is None.
-        watch_mode: bool. Run the compiler in watch mode, which rebuilds on file
-            change.
-        max_old_space_size: int|None. Sets the max memory size of the compiler's
-            "old memory" section. As memory consumption approaches the limit,
-            the compiler will spend more time on garbage collection in an effort
-            to free unused memory.
-
-    Yields:
-        psutil.Process. The Webpack compiler process.
-
-    Raises:
-        OSError. First build never completed.
-    """
-    if config_path is not None:
-        pass
-    elif use_prod_env:
-        config_path = (
-            common.WEBPACK_PROD_SOURCE_MAPS_CONFIG
-            if use_source_maps
-            else common.WEBPACK_PROD_CONFIG
-        )
-    else:
-        config_path = (
-            common.WEBPACK_DEV_SOURCE_MAPS_CONFIG
-            if use_source_maps
-            else common.WEBPACK_DEV_CONFIG
-        )
-
-    compiler_args = [
-        common.NODE_BIN_PATH,
-        common.WEBPACK_BIN_PATH,
-        '--config',
-        config_path,
-    ]
-    if max_old_space_size:
-        # NOTE: --max-old-space-size is a flag for Node.js, not the Webpack
-        # compiler, so we insert it immediately after NODE_BIN_PATH.
-        compiler_args.insert(1, '--max-old-space-size=%d' % max_old_space_size)
-    if watch_mode:
-        compiler_args.extend(['--color', '--watch', '--progress'])
-    with contextlib.ExitStack() as exit_stack:
-        # OK to use shell=True here because we are passing string literals and
-        # constants, so there is no risk of a shell-injection attack.
-        proc = exit_stack.enter_context(
-            managed_process(
-                compiler_args,
-                human_readable_name='Webpack Compiler',
-                shell=True,
-                # Capture compiler's output to detect when builds have completed.
-                stdout=subprocess.PIPE,
-            )
-        )
-
-        read_line_func: Callable[[], Optional[bytes]] = (
-            lambda: proc.stdout.readline() or None
-        )
-        if watch_mode:
-            for line in iter(read_line_func, None):
-                common.write_stdout_safe(line)
-                # Message printed when a compilation has succeeded. We break
-                # after the first one to ensure the site is ready to be visited.
-                if b'Built at: ' in line:
                     break
             else:
                 # If none of the lines contained the string 'Built at',
@@ -727,8 +637,8 @@ def managed_portserver() -> Iterator[psutil.Process]:
                 proc.send_signal(signal.SIGINT)
             except OSError:
                 # Raises when the process has already shutdown, in which case we
-                # can just return immediately.
-                return  # pylint: disable=lost-exception
+                # can just ignore and exit normally.
+                pass
             else:
                 # Otherwise, give the portserver 10 seconds to shut down after
                 # sending CTRL-C (SIGINT).
@@ -740,94 +650,6 @@ def managed_portserver() -> Iterator[psutil.Process]:
                     logging.error(
                         'Portserver failed to shut down after 10 seconds.'
                     )
-
-
-@contextlib.contextmanager
-def managed_webdriverio_server(
-    suite_name: str = 'full',
-    dev_mode: bool = True,
-    debug_mode: bool = False,
-    sharding_instances: int = 1,
-    chrome_version: Optional[str] = None,
-    mobile: bool = False,
-    stdout: int = subprocess.PIPE,
-) -> Iterator[psutil.Process]:
-    """Returns context manager to start/stop the WebdriverIO server gracefully.
-
-    Args:
-        suite_name: str. The suite name whose tests should be run. If the value
-            is `full`, all tests will run.
-        dev_mode: bool. Whether the test is running on dev_mode.
-        debug_mode: bool. Whether to run the webdriverio tests in debugging
-            mode. Read the following instructions to learn how to run e2e
-            tests in debugging mode:
-            https://webdriver.io/docs/debugging/#the-debug-command.
-        sharding_instances: int. How many sharding instances to be running.
-        chrome_version: str|None. The version of Google Chrome to run the tests
-            on. If None, then the currently-installed version of Google Chrome
-            is used instead.
-        stdout: int. This parameter specifies the executed program's standard
-            output file handle.
-        mobile: bool. Whether to run the webdriverio tests in mobile mode.
-
-    Yields:
-        psutil.Process. The webdriverio process.
-
-    Raises:
-        ValueError. Number of sharding instances are less than 0.
-    """
-    if sharding_instances <= 0:
-        raise ValueError('Sharding instance should be larger than 0')
-
-    if chrome_version is None:
-        chrome_version = get_chromedriver_version()
-
-    if mobile:
-        os.environ['MOBILE'] = 'true'
-    else:
-        os.environ['MOBILE'] = 'false'
-
-    webdriverio_args = [
-        common.NPX_BIN_PATH,
-        # This flag ensures tests fail if the `waitFor()` calls time out.
-        '--unhandled-rejections=strict',
-        common.NODEMODULES_WDIO_BIN_PATH,
-        common.WEBDRIVERIO_CONFIG_FILE_PATH,
-        '--suite',
-        suite_name,
-        chrome_version,
-        '--params.devMode=%s' % dev_mode,
-    ]
-
-    # Capabilities in wdio.conf.js are added as an array of object,
-    # so in order to set the value of maxmium instances of chrome
-    # in wdio.conf.js, we need to provide the index of the capability
-    # at which chrome is present, i.e. 0.
-    if sharding_instances > 1:
-        webdriverio_args.extend(
-            [
-                '--capabilities[0].maxInstances=%d' % sharding_instances,
-            ]
-        )
-
-    if debug_mode:
-        webdriverio_args.insert(0, 'DEBUG=true')
-
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
-    managed_webdriverio_proc = managed_process(
-        webdriverio_args,
-        human_readable_name='WebdriverIO Server',
-        shell=True,
-        raise_on_nonzero_exit=False,
-        stdout=stdout,
-    )
-
-    try:
-        with managed_webdriverio_proc as proc:
-            yield proc
-    finally:
-        del os.environ['MOBILE']
 
 
 @contextlib.contextmanager

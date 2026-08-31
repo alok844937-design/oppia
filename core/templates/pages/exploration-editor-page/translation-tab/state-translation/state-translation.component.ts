@@ -56,10 +56,13 @@ import {TranslatedContent} from 'domain/exploration/translated-content.model';
 import {TranslationLanguageService} from '../services/translation-language.service';
 import {PlatformFeatureService} from 'services/platform-feature.service';
 import {I18nLanguageCodeService} from 'services/i18n-language-code.service';
+import {InteractionSpecsKey} from 'pages/interaction-specs.constants';
+import './state-translation.component.css';
 
 @Component({
   selector: 'oppia-state-translation',
   templateUrl: './state-translation.component.html',
+  styleUrls: ['./state-translation.component.css'],
 })
 export class StateTranslationComponent implements OnInit, OnDestroy {
   @Input() isTranslationTabBusy!: boolean;
@@ -81,7 +84,7 @@ export class StateTranslationComponent implements OnInit, OnDestroy {
   stateHints!: Hint[];
   stateName!: string;
   needsUpdateTooltipMessage!: string;
-  stateInteractionId!: string;
+  stateInteractionId!: InteractionSpecsKey | null;
   TAB_ID_CUSTOMIZATION_ARGS!: string;
   TAB_ID_SOLUTION!: string;
   TAB_ID_FEEDBACK!: string;

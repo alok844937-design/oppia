@@ -80,7 +80,6 @@ const FILE_EXCLUSIONS_FOR_SEARCH = [
   'core/tests/test-dependencies',
   'core/templates/tests',
   'core/templates/utility/hashes.ts',
-  'webpack.*.ts',
   'angular-template-style-url-replacer.webpack-loader.js',
   'core/tests/playwright-acceptance-tests',
 ];
@@ -114,8 +113,9 @@ const MANUALLY_MAPPED_DEPENDENCIES: Record<string, string[]> = {
 };
 
 const LIGHTHOUSE_MODULES = [
-  '.lighthouserc-performance.js',
-  '.lighthouserc-accessibility.js',
+  '.lighthouserc.js',
+  '.lighthouserc-base.js',
+  '.lighthouserc-desktop.js',
 ];
 
 const CI_TEST_SUITE_CONFIGS_DIRECTORY = path.resolve(
