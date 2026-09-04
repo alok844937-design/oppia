@@ -163,9 +163,21 @@ describe('Translation Coordinator', function () {
     await translationCoordinator.addUsernameInUsernameInputModal(
       'translationReviewer1'
     );
+    const addRightsModal = await translationCoordinator.page.$(
+      '.e2e-test-translation-role-editor-modal'
+    );
+    if (!addRightsModal) {
+      throw new Error('Translation role editor modal not found.');
+    }
+    const addRightsModalBox = await addRightsModal.boundingBox();
+    if (!addRightsModalBox) {
+      throw new Error('Could not get bounding box of the modal.');
+    }
     await translationCoordinator.expectScreenshotToMatch(
       'addTranslationRightsModal',
-      __dirname
+      __dirname,
+      undefined,
+      {clip: addRightsModalBox}
     );
 
     await translationCoordinator.addLanguageInLanguageSelectorModal(
@@ -199,9 +211,21 @@ describe('Translation Coordinator', function () {
     await translationCoordinator.addUsernameInUsernameInputModal(
       'translationReviewer1'
     );
+    const hindiRightsModal = await translationCoordinator.page.$(
+      '.e2e-test-translation-role-editor-modal'
+    );
+    if (!hindiRightsModal) {
+      throw new Error('Translation role editor modal not found.');
+    }
+    const hindiRightsModalBox = await hindiRightsModal.boundingBox();
+    if (!hindiRightsModalBox) {
+      throw new Error('Could not get bounding box of the modal.');
+    }
     await translationCoordinator.expectScreenshotToMatch(
       'translationRightsModalWithHindiSelected',
-      __dirname
+      __dirname,
+      undefined,
+      {clip: hindiRightsModalBox}
     );
 
     await translationCoordinator.removeLanguageFromLanguageSelectorModal(
