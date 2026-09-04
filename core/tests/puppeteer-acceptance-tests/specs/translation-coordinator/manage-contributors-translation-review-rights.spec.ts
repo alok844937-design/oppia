@@ -207,7 +207,7 @@ describe('Translation Coordinator', function () {
     // row before opening the modal, to avoid a layout shift mid-screenshot.
     await translationCoordinator.expectTextContentToContain(
       '.e2e-test-language-selector-selected',
-      'English'
+      'Hindi'
     );
 
     await translationCoordinator.clickOnAddReviewerOrSubmitterButton();
