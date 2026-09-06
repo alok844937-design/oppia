@@ -14,6 +14,8 @@
 
 """Controllers for validating access."""
 
+# pylint: disable=arguments-differ
+
 from __future__ import annotations
 
 from core import feconf
@@ -61,7 +63,7 @@ class ClassroomAccessValidationHandler(
     }
 
     @acl_decorators.open_access
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Retrieves information about a classroom.
 
         Raises:
@@ -95,7 +97,7 @@ class ClassroomsPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.open_access
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Retrieves information about classrooms.
 
         Raises:
@@ -137,7 +139,7 @@ class SubtopicViewerPageRevisionRedirectHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_subtopic_viewer_page
-    def get(self, *args: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, *args: str) -> None:
         """Handles GET requests and redirects to study guide URL."""
         classroom_url_fragment = self.request.route_kwargs.get(
             'classroom_url_fragment'
@@ -182,7 +184,7 @@ class SubtopicViewerPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_subtopic_viewer_page
-    def get(self, *args: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, *args: str) -> None:
         """Handles GET requests."""
         pass
 
@@ -200,7 +202,7 @@ class CollectionViewerPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_play_collection
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, _: str) -> None:
         """Handles GET requests."""
         pass
 
@@ -218,7 +220,7 @@ class TopicViewerPageRevisionRedirectHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_topic_viewer_page
-    def get(self, *args: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, *args: str) -> None:
         """Handles GET requests and redirects to study guide URL."""
         classroom_url_fragment = self.request.route_kwargs.get(
             'classroom_url_fragment'
@@ -245,7 +247,7 @@ class TopicViewerPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_topic_viewer_page
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, _: str) -> None:
         """Handles GET requests."""
         pass
 
@@ -265,7 +267,7 @@ class StoryViewerPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_story_viewer_page
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, _: str) -> None:
         """Handles GET requests."""
         pass
 
@@ -281,7 +283,7 @@ class FacilitatorDashboardPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_learner_groups
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Retrieves information about a learner group.
 
         Raises:
@@ -305,7 +307,7 @@ class ManageOwnAccountValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_manage_own_account
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Handles GET requests."""
         pass
 
@@ -340,9 +342,7 @@ class PracticeSessionAccessValidationPage(
     }
 
     @acl_decorators.can_access_topic_viewer_page
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
     def get(self, _: str, **kwargs: str) -> None:
-
         """Handles GET requests."""
 
         assert self.normalized_request is not None
@@ -423,19 +423,19 @@ class PracticeSessionAccessValidationPage(
     ) -> None:
         """Validates that the given node ID exists in the first story.
 
-        The node_id parameter is a 1-based index that maps to the nth node
-        in the first published story of the topic.
+        The node_id parameter maps to a node by its ID suffix (e.g., '1'
+        maps to the node whose id is 'node_1').
 
         Args:
             topic: Topic. The topic object.
-            node_id: str. The node ID (1-based index) to validate.
+            node_id: str. The node ID suffix (e.g., '1') to validate.
 
         Raises:
             NotFoundException. The node ID was not found.
         """
         all_nodes = self._get_all_nodes_for_topic(topic)
-        valid_indices = {node.id.replace('node_', '') for node in all_nodes}
-        if node_id not in valid_indices:
+        target_node_id = 'node_%s' % node_id
+        if not any(node.id == target_node_id for node in all_nodes):
             raise self.NotFoundException(
                 'Node with id %s is not part of this topic.' % node_id
             )
@@ -443,19 +443,23 @@ class PracticeSessionAccessValidationPage(
     def _validate_arc_id(self, topic: topic_domain.Topic, arc_id: str) -> None:
         """Validates that the given arc ID exists in the first story.
 
-        The arc_id parameter is a 1-based index that maps to the nth arc
-        in the first published story of the topic.
+        The arc_id parameter is a 1-based index that maps to the nth arc in
+        the first published story of the topic (e.g., '1' maps to the first
+        arc).
 
         Args:
             topic: Topic. The topic object.
-            arc_id: str. The arc index (e.g., '1') to validate.
+            arc_id: str. The arc ID (1-based index) to validate.
 
         Raises:
             NotFoundException. The arc ID was not found.
         """
         all_arcs = self._get_all_arcs_for_topic(topic)
-        valid_indices = {arc.id.replace('arc_', '') for arc in all_arcs}
-        if arc_id not in valid_indices:
+        if (
+            not arc_id.isascii()
+            or not arc_id.isdigit()
+            or not 1 <= int(arc_id) <= len(all_arcs)
+        ):
             raise self.NotFoundException(
                 'Arc with id %s is not part of this topic.' % arc_id
             )
@@ -472,7 +476,7 @@ class ProfileExistsValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.open_access
-    def get(self, username: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, username: str) -> None:
         """Validates access to profile page.
 
         Args:
@@ -499,7 +503,7 @@ class DiagnosticTestPlayerAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.open_access
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Handles GET requests."""
         pass
 
@@ -515,7 +519,7 @@ class ReleaseCoordinatorAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_release_coordinator_page
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Handles GET requests."""
         pass
 
@@ -543,9 +547,7 @@ class ViewLearnerGroupPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_learner_groups
-    def get(  # pylint: disable=arguments-differ
-        self, learner_group_id: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, learner_group_id: str) -> None:
         """Retrieves information about a learner group.
 
         Args:
@@ -622,9 +624,7 @@ class ExplorationPlayerAccessValidationPage(
     }
 
     @acl_decorators.can_play_exploration
-    def get(  # pylint: disable=arguments-differ
-        self, exploration_id: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, exploration_id: str) -> None:
         """Handles GET requests.
 
         Args:
@@ -657,7 +657,7 @@ class CreateLearnerGroupPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_learner_groups
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Retrieves information about a learner group.
 
         Raises:
@@ -693,9 +693,7 @@ class EditLearnerGroupPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_learner_groups
-    def get(  # pylint: disable=arguments-differ
-        self, learner_group_id: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, learner_group_id: str) -> None:
         """Validates access to edit learner group page.
 
         Args:
@@ -731,7 +729,7 @@ class BlogHomePageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.open_access
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Validates access to blog home page."""
         pass
 
@@ -759,7 +757,7 @@ class BlogPostPageAccessValidationHandler(
     }
 
     @acl_decorators.open_access
-    def get(self) -> None:  # pylint: disable=arguments-differ
+    def get(self) -> None:
         """Retrieves information about a blog post.
 
         Raises:
@@ -798,9 +796,7 @@ class BlogAuthorProfilePageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.open_access
-    def get(  # pylint: disable=arguments-differ
-        self, author_username: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, author_username: str) -> None:
         """Retrieves information about a blog post author.
 
         Args:
@@ -849,7 +845,7 @@ class SkillEditorPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_edit_skill
-    def get(self, skill_id: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, skill_id: str) -> None:
         """Renders skill editor page.
 
         Args:
@@ -879,7 +875,7 @@ class CollectionEditorAccessValidationPage(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_edit_collection
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, _: str) -> None:
         """Handles GET requests."""
         pass
 
@@ -905,9 +901,7 @@ class ExplorationEditorAccessValidationHandlerPage(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_play_exploration
-    def get(  # pylint: disable=arguments-differ
-        self, unused_exploration_id: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, unused_exploration_id: str) -> None:
         """Renders an exploration editor page.
 
         Args:
@@ -938,7 +932,7 @@ class TopicEditorAccessValidationPage(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_view_any_topic_editor
-    def get(self, topic_id: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, topic_id: str) -> None:
         """Displays the topic editor page.
 
         Args:
@@ -973,9 +967,7 @@ class StoryEditorAccessValidationHandlerPage(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_edit_story
-    def get(  # pylint: disable=arguments-differ
-        self, unused_story_id: str
-    ) -> None:  # pylint: disable=arguments-differ
+    def get(self, unused_story_id: str) -> None:
         """Renders the story editor page.
 
         Args:
@@ -999,7 +991,7 @@ class ReviewTestsPageAccessValidationHandler(
     HANDLER_ARGS_SCHEMAS: Dict[str, Dict[str, str]] = {'GET': {}}
 
     @acl_decorators.can_access_story_viewer_page
-    def get(self, _: str) -> None:  # pylint: disable=arguments-differ
+    def get(self, _: str) -> None:
         """Handles GET requests."""
         pass
 

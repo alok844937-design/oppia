@@ -14,6 +14,8 @@
 
 """Tests for story domain objects and methods defined on them."""
 
+# pylint: disable=arguments-differ
+
 from __future__ import annotations
 
 import datetime
@@ -283,9 +285,7 @@ class StoryDomainUnitTests(test_utils.GenericTestBase):
 
     # Here we use MyPy ignore because the signature of this method
     # doesn't match with TestBase._assert_validation_error().
-    def _assert_validation_error(  # type: ignore[override]  # pylint: disable=arguments-differ
-        self, expected_error_substring: str
-    ) -> None:
+    def _assert_validation_error(self, expected_error_substring: str) -> None:  # type: ignore[override]
         """Checks that the story passes validation.
 
         Args:
@@ -527,6 +527,7 @@ class StoryDomainUnitTests(test_utils.GenericTestBase):
                 'nodes': [],
                 'initial_node_id': None,
                 'next_node_id': self.NODE_ID_1,
+                'arcs': [],
             },
             'story_contents_schema_version': (
                 feconf.CURRENT_STORY_CONTENTS_SCHEMA_VERSION
@@ -2635,7 +2636,6 @@ class StoryDomainUnitTests(test_utils.GenericTestBase):
         self.story.title = ''
         self._assert_validation_error('Title field should not be empty')
 
-
     def test_arc_validate_invalid_arc_id(self) -> None:
         self.story.story_contents.add_arc(
             story_domain.Arc('arc_1', 'Title', 'Desc', ['node_1'])
@@ -2938,9 +2938,9 @@ class StoryDomainUnitTests(test_utils.GenericTestBase):
         self.assertIn(
             'node_3', self.story.story_contents.nodes[0].destination_node_ids
         )
-        
+
     def test_story_summary_creation(self) -> None:
-        curr_time = datetime.datetime.utcnow()
+        curr_time = utils.get_current_utc_datetime()
         story_summary = story_domain.StorySummary(
             'story_id',
             'title',
@@ -3045,11 +3045,12 @@ class StoryDomainUnitTests(test_utils.GenericTestBase):
             'Updated Description',
         )
 
+
 class StorySummaryTests(test_utils.GenericTestBase):
 
     def setUp(self) -> None:
         super().setUp()
-        current_time = datetime.datetime.utcnow()
+        current_time = utils.get_current_utc_datetime()
         time_in_millisecs = utils.get_time_in_millisecs(current_time)
         self.story_summary_dict = {
             'story_model_created_on': time_in_millisecs,
@@ -3084,9 +3085,7 @@ class StorySummaryTests(test_utils.GenericTestBase):
 
     # Here we use MyPy ignore because the signature of this method
     # doesn't match with TestBase._assert_validation_error().
-    def _assert_validation_error(  # type: ignore[override]  # pylint: disable=arguments-differ
-        self, expected_error_substring: str
-    ) -> None:
+    def _assert_validation_error(self, expected_error_substring: str) -> None:  # type: ignore[override]
         """Checks that the story summary passes validation.
 
         Args:
