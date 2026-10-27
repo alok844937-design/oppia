@@ -42,7 +42,6 @@ class FeatureNames(enum.Enum):
     )
     SERIAL_CHAPTER_LAUNCH_LEARNER_VIEW = 'serial_chapter_launch_learner_view'
     SHOW_REDESIGNED_LEARNER_DASHBOARD = 'show_redesigned_learner_dashboard'
-    SHOW_TRANSLATION_SIZE = 'show_translation_size'
     CD_ADMIN_DASHBOARD_NEW_UI = 'cd_admin_dashboard_new_ui'
     IS_IMPROVEMENTS_TAB_ENABLED = 'is_improvements_tab_enabled'
     LEARNER_GROUPS_ARE_ENABLED = 'learner_groups_are_enabled'
@@ -186,7 +185,6 @@ DEPRECATED_FEATURE_NAMES: List[FeatureNames] = [
     FeatureNames.ADD_VOICEOVER_WITH_ACCENT,
     FeatureNames.ENABLE_MULTIPLE_CLASSROOMS,
     FeatureNames.ENABLE_WORKED_EXAMPLES_RTE_COMPONENT,
-    FeatureNames.SHOW_TRANSLATION_SIZE,
 ]
 
 FEATURE_FLAG_NAME_TO_DESCRIPTION_AND_FEATURE_STAGE = {
